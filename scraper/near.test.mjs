@@ -17,9 +17,9 @@ async function open(b, geo) {
     await p.route('**/*', route => {
         const u = new URL(route.request().url());
         if (u.hostname === 'get.geojs.io') return geo ? route.fulfill({ json: geo }) : route.abort();
+        if (u.hostname === 'api.5x1.com' && u.pathname === '/jibo-listings') return route.fulfill({ json: listings });
         if (u.hostname !== 'buy.test') return route.abort();
         const f = u.pathname === '/' ? 'index.html' : u.pathname.slice(1);
-        if (f === 'listings.json') return route.fulfill({ json: listings });
         return route.fulfill({ body: fs.readFileSync(path.join(root, f)), contentType: f.endsWith('.js') ? 'text/javascript' : f.endsWith('.css') ? 'text/css' : 'text/html' });
     });
     await p.goto('http://buy.test/'); await p.waitForTimeout(800);

@@ -73,7 +73,7 @@
     if (state) { $('near').hidden = false; $('near').textContent = 'Near me · ' + state; $('near').title = 'Only show Facebook Marketplace pickups in ' + g.region; render(); }
   }).catch(function () {});
   $('q').addEventListener('input', render); $('sort').addEventListener('change', render);
-  fetch('./listings.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (d) {
+  fetch('https://api.5x1.com/jibo-listings', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (d) {
     data = d; $('updated').textContent = 'Updated ' + ago(d.updated); chips(); render();
   }).catch(function () { $('updated').textContent = 'Couldn’t load listings'; $('empty').hidden = false; });
 })();

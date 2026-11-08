@@ -1,4 +1,5 @@
-// Scrapes Jibo listings from eBay, Mercari, Facebook Marketplace, Craigslist and Poshmark into ../listings.json.
+// Scrapes Jibo listings from eBay, Mercari, Facebook Marketplace, Craigslist and Poshmark into ../listings.json
+// (local state, not committed); publish.sh uploads it to BEefy, which serves it to the site at /jibo-listings.
 // eBay and Mercari block headless browsers, so run it headed under Xvfb:  xvfb-run -a node scraper/scrape.mjs
 import { chromium } from 'playwright';
 import fs from 'node:fs';
