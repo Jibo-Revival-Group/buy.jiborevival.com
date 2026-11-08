@@ -1,4 +1,4 @@
-// Scrapes Jibo listings from eBay, Mercari, Facebook Marketplace and Craigslist into ../listings.json.
+// Scrapes Jibo listings from eBay, Mercari, Facebook Marketplace, Craigslist and Poshmark into ../listings.json.
 // eBay and Mercari block headless browsers, so run it headed under Xvfb:  xvfb-run -a node scraper/scrape.mjs
 import { chromium } from 'playwright';
 import fs from 'node:fs';
@@ -100,6 +100,33 @@ async function craigslist() {
     return [...out.values()];
 }
 
+// Poshmark serves its results in the page (window.__INITIAL_STATE__.$_search.gridData.data) to a plain request.
+export function poshmarkItems(html) {
+    const at = html.indexOf('window.__INITIAL_STATE__');
+    if (at < 0) throw new Error('no search data');
+    const start = html.indexOf('{', at);
+    let depth = 0, end = start, inString = false;  // the object is followed by more script, so find its closing brace
+    for (; end < html.length; end++) {
+        const c = html[end];
+        if (inString) { if (c === '\\') end++; else if (c === '"') inString = false; }
+        else if (c === '"') inString = true;
+        else if (c === '{') depth++;
+        else if (c === '}' && --depth === 0) break;
+    }
+    const state = JSON.parse(html.slice(start, end + 1));
+    return ((state.$_search && state.$_search.gridData && state.$_search.gridData.data) || [])
+        .filter(i => i.inventory && i.inventory.status === 'available')
+        .map(i => ({ id: 'poshmark:' + i.id, title: i.title, priceText: '$' + Number(i.price_amount.val).toFixed(2), image: i.picture_url, location: '',
+            url: 'https://poshmark.com/listing/' + i.title.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + i.id }));
+}
+
+async function poshmark() {
+    const r = await fetch('https://poshmark.com/search?query=jibo&type=listings&availability=available',
+        { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return poshmarkItems(await r.text());
+}
+
 // Keeps firstSeen across runs; a marketplace that fails this run keeps its previous listings instead of vanishing.
 export function merge(previous, results, now) {
     const old = new Map((previous.listings || []).map(l => [l.id, l])), listings = [], sources = {};
@@ -125,7 +152,7 @@ async function main() {
     const b = await chromium.launch({ headless: false, channel: 'chromium', args: ['--disable-blink-features=AutomationControlled'] });
     const ctx = await b.newContext({ locale: 'en-US', viewport: { width: 1280, height: 900 } });
     const results = {};
-    for (const [name, run] of [['ebay', () => ebay(ctx)], ['mercari', () => mercari(ctx)], ['facebook', () => facebook(ctx)], ['craigslist', craigslist]]) {
+    for (const [name, run] of [['ebay', () => ebay(ctx)], ['mercari', () => mercari(ctx)], ['facebook', () => facebook(ctx)], ['craigslist', craigslist], ['poshmark', poshmark]]) {
         try { const items = await run(); results[name] = { items }; console.log(name, items.length, 'found'); }
         catch (e) { results[name] = { error: e.message.slice(0, 200) }; console.error(name, 'FAILED', e.message); }
     }

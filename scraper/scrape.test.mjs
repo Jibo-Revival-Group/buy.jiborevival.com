@@ -1,6 +1,6 @@
 // node scraper/scrape.test.mjs — filter, price parsing and merge rules.
 import assert from 'node:assert';
-import { isJibo, price, merge, craigslistItems } from './scrape.mjs';
+import { isJibo, price, merge, craigslistItems, poshmarkItems } from './scrape.mjs';
 
 // Real titles from the first scrape.
 for (const t of ['Jibo Social Robot', 'jibo robot can be powered on', 'New Factory Sealed Original Jibo Social Robot Box Unopened AI Collectible', 'Brand new jibo',
@@ -32,4 +32,11 @@ const cl = craigslistItems({ decode: { minPostingId: 7941080805, locationDescrip
     items: [[54176544, 2441821, 97, 50, '1:1~42.0212~-71.2178', '0t20CI', [13, 'x'], [4, '3:01313_2aXTP4cg0Nz_0t20CI'], [6, 'mansfield-roomba'], [10, '$50'], 'Roomba robot']] }, { 97: 'hsh' }, 'boston');
 assert.deepStrictEqual(cl[0], { id: 'craigslist:7995257349', url: 'https://boston.craigslist.org/sob/hsh/d/mansfield-roomba/7995257349.html', title: 'Roomba robot',
     priceText: '$50', image: 'https://images.craigslist.org/01313_2aXTP4cg0Nz_0t20CI_300x300.jpg', location: 'Mansfield/Foxboro' });
+// Shape of a real Poshmark search page; sold items are dropped.
+const page = '<script>window.__INITIAL_STATE__=' + JSON.stringify({ $_search: { gridData: { data: [
+    { id: '5b57a3a1aaa5b8581e93133c', title: 'Jibo robot', inventory: { status: 'available' }, price_amount: { val: '500.0' }, picture_url: 'https://di2ponv0v5otw.cloudfront.net/m_1.jpg' },
+    { id: '5bc2eb127386bc470b708d6e', title: 'Jibo Robot', inventory: { status: 'sold_out' }, price_amount: { val: '400.0' }, picture_url: 'x', description: 'has a } and \\" in it' }] } } }) + ';window.__OTHER__={"a":1};</script>';
+assert.deepStrictEqual(poshmarkItems(page), [{ id: 'poshmark:5b57a3a1aaa5b8581e93133c', title: 'Jibo robot', priceText: '$500.00', location: '',
+    image: 'https://di2ponv0v5otw.cloudfront.net/m_1.jpg', url: 'https://poshmark.com/listing/Jibo-robot-5b57a3a1aaa5b8581e93133c' }]);
+assert.throws(() => poshmarkItems('<html>blocked</html>'), /no search data/);
 console.log('PASS scrape');

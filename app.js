@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  var NAMES = { ebay: 'eBay', mercari: 'Mercari', facebook: 'Facebook Marketplace', craigslist: 'Craigslist' };
+  var NAMES = { ebay: 'eBay', mercari: 'Mercari', facebook: 'Facebook Marketplace', craigslist: 'Craigslist', poshmark: 'Poshmark' };
   var DAY = 864e5, data = { listings: [], sources: {} }, off = {}, near = true, state = null;
   var STATES = { Alabama: 'AL', Alaska: 'AK', Arizona: 'AZ', Arkansas: 'AR', California: 'CA', Colorado: 'CO', Connecticut: 'CT', Delaware: 'DE', 'District of Columbia': 'DC',
     Florida: 'FL', Georgia: 'GA', Hawaii: 'HI', Idaho: 'ID', Illinois: 'IL', Indiana: 'IN', Iowa: 'IA', Kansas: 'KS', Kentucky: 'KY', Louisiana: 'LA', Maine: 'ME', Maryland: 'MD',
