@@ -1,7 +1,18 @@
 (function () {
   'use strict';
   var NAMES = { ebay: 'eBay', mercari: 'Mercari', facebook: 'Facebook Marketplace', craigslist: 'Craigslist' };
-  var DAY = 864e5, data = { listings: [], sources: {} }, off = {};
+  var DAY = 864e5, data = { listings: [], sources: {} }, off = {}, near = true, state = null;
+  var STATES = { Alabama: 'AL', Alaska: 'AK', Arizona: 'AZ', Arkansas: 'AR', California: 'CA', Colorado: 'CO', Connecticut: 'CT', Delaware: 'DE', 'District of Columbia': 'DC',
+    Florida: 'FL', Georgia: 'GA', Hawaii: 'HI', Idaho: 'ID', Illinois: 'IL', Indiana: 'IN', Iowa: 'IA', Kansas: 'KS', Kentucky: 'KY', Louisiana: 'LA', Maine: 'ME', Maryland: 'MD',
+    Massachusetts: 'MA', Michigan: 'MI', Minnesota: 'MN', Mississippi: 'MS', Missouri: 'MO', Montana: 'MT', Nebraska: 'NE', Nevada: 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
+    'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', Ohio: 'OH', Oklahoma: 'OK', Oregon: 'OR', Pennsylvania: 'PA', 'Rhode Island': 'RI',
+    'South Carolina': 'SC', 'South Dakota': 'SD', Tennessee: 'TN', Texas: 'TX', Utah: 'UT', Vermont: 'VT', Virginia: 'VA', Washington: 'WA', 'West Virginia': 'WV',
+    Wisconsin: 'WI', Wyoming: 'WY' };
+  // Near me hides Facebook Marketplace pickups in other states ("Morristown, NJ"); "Ships to you" and other marketplaces stay.
+  function farAway(l) {
+    if (!near || !state || l.source !== 'facebook') return false;
+    var m = /,\s*([A-Z]{2})\s*$/.exec(l.location || ''); return !!m && m[1] !== state;
+  }
   var $ = function (id) { return document.getElementById(id); };
 
   function ago(iso) {
@@ -33,7 +44,7 @@
 
   function render() {
     var q = $('q').value.trim().toLowerCase(), sort = $('sort').value;
-    var list = data.listings.filter(function (l) { return !off[l.source] && (!q || (l.title + ' ' + (l.location || '')).toLowerCase().indexOf(q) !== -1); });
+    var list = data.listings.filter(function (l) { return !off[l.source] && !farAway(l) && (!q || (l.title + ' ' + (l.location || '')).toLowerCase().indexOf(q) !== -1); });
     if (sort !== 'new') list = list.slice().sort(function (a, b) {
       if (a.price == null) return 1; if (b.price == null) return -1; return sort === 'low' ? a.price - b.price : b.price - a.price;
     });
@@ -55,6 +66,12 @@
     });
   }
 
+  $('near').onclick = function () { near = !near; this.setAttribute('aria-pressed', String(near)); render(); };
+  // The visitor's state from their IP (no location prompt). Unknown or outside the US: no Near me button, everything shows.
+  fetch('https://get.geojs.io/v1/ip/geo.json').then(function (r) { return r.json(); }).then(function (g) {
+    state = g.country_code === 'US' ? STATES[g.region] || null : null;
+    if (state) { $('near').hidden = false; $('near').textContent = 'Near me · ' + state; $('near').title = 'Only show Facebook Marketplace pickups in ' + g.region; render(); }
+  }).catch(function () {});
   $('q').addEventListener('input', render); $('sort').addEventListener('change', render);
   fetch('./listings.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (d) {
     data = d; $('updated').textContent = 'Updated ' + ago(d.updated); chips(); render();
