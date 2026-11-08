@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Jibo robots for sale right now on eBay, Mercari, Facebook Marketplace and Craigslist, in one place.">
+  <meta name="theme-color" content="#f4f7fb">
+  <title>Buy a Jibo · Jibo Revival</title>
+  <link rel="canonical" href="https://buy.jiborevival.com/">
+  <link rel="icon" href="./assets/jrg.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#listings">Skip to listings</a>
+  <div class="shell">
+    <header class="masthead">
+      <a class="guide-brand" href="./" aria-label="Buy a Jibo home"><img class="guide-mark" src="./assets/jrg.svg" width="28" height="28" alt="">Jibo Revival<span class="brand-divider" aria-hidden="true">/</span><span class="brand-section">Buy a Jibo</span></a>
+      <span class="masthead-note" id="updated">Loading listings…</span>
+    </header>
+    <main>
+      <section class="intro" aria-labelledby="title">
+        <p class="eyebrow">Every Jibo for sale, in one place</p>
+        <h1 id="title">Find a <span>Jibo</span></h1>
+        <p class="intro-copy">Listings from eBay, Mercari, Facebook Marketplace and Craigslist, checked every few hours. Buying happens on the marketplace; always check the photos and ask the seller whether he powers on.</p>
+      </section>
+      <section class="panel" id="listings" aria-labelledby="listings-title" tabindex="-1">
+        <div class="panel-heading">
+          <h2 id="listings-title">For sale now <span id="count"></span></h2>
+          <div class="controls">
+            <label class="search"><span class="visually-hidden">Search listings</span><input id="q" type="search" placeholder="Search listings" autocomplete="off"></label>
+            <label><span class="visually-hidden">Sort</span><select id="sort"><option value="new">Newest first</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option></select></label>
+          </div>
+        </div>
+        <div class="chips" id="sources" role="group" aria-label="Marketplaces"></div>
+        <ul class="grid" id="grid" aria-live="polite"></ul>
+        <p class="empty" id="empty" hidden>No listings match right now. Check back soon.</p>
+      </section>
+    </main>
+    <footer class="footer"><span>Jibo Revival Team</span><span>Not affiliated with any marketplace. Prices and availability can change.</span></footer>
+  </div>
+  <script src="./app.js"></script>
+</body>
+</html>
