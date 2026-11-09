@@ -1,6 +1,6 @@
 // node scraper/scrape.test.mjs — filter, price parsing and merge rules.
 import assert from 'node:assert';
-import { isJibo, price, merge, craigslistItems, poshmarkItems } from './scrape.mjs';
+import { isJibo, price, merge, craigslistItems, poshmarkItems, hotness } from './scrape.mjs';
 
 // Real titles from the first scrape.
 for (const t of ['Jibo Social Robot', 'jibo robot can be powered on', 'New Factory Sealed Original Jibo Social Robot Box Unopened AI Collectible', 'Brand new jibo',
@@ -39,4 +39,13 @@ const page = '<script>window.__INITIAL_STATE__=' + JSON.stringify({ $_search: { 
 assert.deepStrictEqual(poshmarkItems(page), [{ id: 'poshmark:5b57a3a1aaa5b8581e93133c', title: 'Jibo robot', priceText: '$500.00', location: '',
     image: 'https://di2ponv0v5otw.cloudfront.net/m_1.jpg', url: 'https://poshmark.com/listing/Jibo-robot-5b57a3a1aaa5b8581e93133c' }]);
 assert.throws(() => poshmarkItems('<html>blocked</html>'), /no search data/);
+// Hotness: price curve, sealed, trusted seller, clamping, hot above 5.
+const h = (p, extra) => hotness({ source: 'ebay', title: 'Jibo Social Robot', price: p, ...extra });
+assert.deepStrictEqual([600, 100, 50, 0, 1250, 2000, 350, 925, null].map(p => h(p)), [0, 6, 6, 6, -6, -6, 3, -3, 0]);
+assert.strictEqual(h(400, { title: 'New Factory Sealed Original Jibo Social Robot Box Unopened' }), 4, '2.4 + 2 sealed');
+assert.strictEqual(h(400, { title: 'Jibo robot, unsealed' }), 2, 'unsealed is not sealed');
+assert.strictEqual(h(400, { seller: 'wesyojoe', title: 'New Factory Sealed Original Jibo Social Robot Box Unopened' }), 6, 'trusted + sealed');
+assert.strictEqual(h(100, { seller: 'MOR_749116', title: 'Sealed Jibo robot' }), 10, 'max 10');
+assert.strictEqual(hotness({ source: 'facebook', title: 'Jibo', price: 600, seller: 'wesyojoe' }), 0, 'trusted only on its marketplace');
+assert.strictEqual(out.listings.find(l => l.id === 'ebay:3').hotness, 6, 'merge stores hotness ($99)');
 console.log('PASS scrape');

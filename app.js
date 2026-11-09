@@ -29,6 +29,11 @@
     var pic = el('div', 'pic');
     if (l.image) { var img = el('img'); img.src = l.image; img.alt = ''; img.loading = 'lazy'; img.referrerPolicy = 'no-referrer'; img.onerror = function () { img.remove(); }; pic.appendChild(img); }
     if (Date.now() - Date.parse(l.firstSeen) < 2 * DAY) pic.appendChild(el('span', 'new', 'New'));
+    if (typeof l.hotness === 'number') {
+      var hot = l.hotness > 5, n = (l.hotness > 0 ? '+' : l.hotness < 0 ? '−' : '') + Math.abs(l.hotness);
+      var badge = el('span', 'heat ' + (hot ? 'hot' : l.hotness > 0 ? 'warm' : l.hotness < 0 ? 'cold' : 'even'), hot ? '🔥 Hot ' + n : n);
+      badge.title = 'Deal score ' + n + ' out of 10'; pic.appendChild(badge);
+    }
     a.appendChild(pic);
     var body = el('div', 'card-body');
     body.appendChild(el('span', 'source ' + l.source, NAMES[l.source] || l.source));
@@ -38,14 +43,16 @@
     if (l.location) meta.appendChild(el('span', null, l.location));
     body.appendChild(meta);
     body.appendChild(el('p', 'seen', 'Found ' + ago(l.firstSeen)));
-    a.appendChild(body); a.setAttribute('aria-label', l.title + ', ' + (l.priceText || 'price on listing') + ', on ' + (NAMES[l.source] || l.source));
+    a.appendChild(body); a.setAttribute('aria-label', l.title + ', ' + (l.priceText || 'price on listing') + ', on ' + (NAMES[l.source] || l.source) +
+      (typeof l.hotness === 'number' ? ', deal score ' + l.hotness + (l.hotness > 5 ? ', hot deal' : '') : ''));
     li.appendChild(a); return li;
   }
 
   function render() {
     var q = $('q').value.trim().toLowerCase(), sort = $('sort').value;
     var list = data.listings.filter(function (l) { return !off[l.source] && !farAway(l) && (!q || (l.title + ' ' + (l.location || '')).toLowerCase().indexOf(q) !== -1); });
-    if (sort !== 'new') list = list.slice().sort(function (a, b) {
+    if (sort === 'hot') list = list.slice().sort(function (a, b) { return (b.hotness || 0) - (a.hotness || 0); });
+    else if (sort !== 'new') list = list.slice().sort(function (a, b) {
       if (a.price == null) return 1; if (b.price == null) return -1; return sort === 'low' ? a.price - b.price : b.price - a.price;
     });
     var grid = $('grid'); grid.textContent = '';

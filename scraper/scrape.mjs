@@ -20,25 +20,50 @@ export function isJibo(title) {
     return /\bjibo\b/i.test(title) && !NOT_JIBO.test(title) &&
         (JIBO_WORD.test(title) || /^\s*(brand\s+)?(new\s+|used\s+)?jibo('?s)?\s*$/i.test(title));
 }
+// Deal hotness from -10 to 10: price against $600 (+6 at $100 or less, -6 at $1,250 or more, linear in between),
+// +2 if sealed, +2 from a trusted seller. Hot above 5.
+export const TRUSTED = { ebay: ['mor_749116', 'wesyojoe'] };
+export function hotness(l) {
+    const p = l.price;
+    let score = p == null ? 0 : p <= 600 ? 6 * Math.min(1, (600 - p) / 500) : -6 * Math.min(1, (p - 600) / 650);
+    if (/\bsealed\b/i.test(l.title) && !/\b(un|not |no longer )sealed\b/i.test(l.title)) score += 2;
+    if (l.seller && (TRUSTED[l.source] || []).includes(l.seller.toLowerCase())) score += 2;
+    return Math.max(-10, Math.min(10, Math.round(score)));
+}
+
 export function price(text) {
     const m = String(text || '').replace(/,/g, '').match(/\$\s*(\d+(?:\.\d+)?)/);
     return m ? Number(m[1]) : null;
 }
 
+// Search cards don't show the seller, so trusted sellers get their own seller-filtered search (_ssn) to tag their items.
 async function ebay(ctx) {
     const p = await ctx.newPage();
     await p.goto('https://www.ebay.com/', { waitUntil: 'domcontentloaded', timeout: 60000 }); await sleep(3000);
-    await p.goto('https://www.ebay.com/sch/i.html?_nkw=jibo&_ipg=240', { waitUntil: 'domcontentloaded', timeout: 60000 }); await sleep(5000);
-    const rows = await p.evaluate(() => [...document.querySelectorAll('li.s-card, li.s-item')].map(li => {
-        const a = li.querySelector('a[href*="/itm/"]'), img = li.querySelector('img');
-        const title = (li.querySelector('.s-card__title, .s-item__title') || {}).innerText || '';
-        const priceText = (li.querySelector('.s-card__price, .s-item__price') || {}).innerText || '';
-        const where = [...li.querySelectorAll('.s-card__attribute-row, .s-item__location')].map(e => e.innerText).find(t => /^(located in|from) /i.test(t)) || '';
-        return a && { url: a.href.split('?')[0], title, priceText, image: img && (img.getAttribute('data-defer-load') || img.src), location: where.replace(/^(located in|from) /i, '') };
-    }).filter(Boolean));
+    const search = async query => {
+        await p.goto('https://www.ebay.com/sch/i.html?_nkw=jibo&_ipg=240' + query, { waitUntil: 'domcontentloaded', timeout: 60000 }); await sleep(5000);
+        const rows = await p.evaluate(() => {
+            const out = [];
+            for (const li of document.querySelectorAll('.srp-results > li, li.s-card, li.s-item')) {
+                if (/REWRITE_START/.test(li.className)) break; // "results matching fewer words" from anyone follow
+                const a = li.querySelector('a[href*="/itm/"]'), img = li.querySelector('img');
+                if (!a) continue;
+                const title = (li.querySelector('.s-card__title, .s-item__title') || {}).innerText || '';
+                const priceText = (li.querySelector('.s-card__price, .s-item__price') || {}).innerText || '';
+                const where = [...li.querySelectorAll('.s-card__attribute-row, .s-item__location')].map(e => e.innerText).find(t => /^(located in|from) /i.test(t)) || '';
+                out.push({ url: a.href.split('?')[0], title, priceText, image: img && (img.getAttribute('data-defer-load') || img.src), location: where.replace(/^(located in|from) /i, '') });
+            }
+            return out;
+        });
+        return rows.map(r => ({ ...r, title: r.title.replace(/\s*Opens in a new window or tab\s*$/i, '').replace(/^New Listing\s*/i, '').trim(),
+            id: 'ebay:' + (r.url.match(/\/itm\/(\d+)/) || [])[1] })).filter(r => r.id !== 'ebay:undefined' && r.id !== 'ebay:123456');
+    };
+    const items = new Map((await search('')).map(r => [r.id, r]));
+    for (const seller of TRUSTED.ebay) {
+        for (const r of await search('&_ssn=' + seller)) items.set(r.id, { ...(items.get(r.id) || r), seller });
+    }
     await p.close();
-    return rows.map(r => ({ ...r, title: r.title.replace(/\s*Opens in a new window or tab\s*$/i, '').replace(/^New Listing\s*/i, '').trim(),
-        id: 'ebay:' + (r.url.match(/\/itm\/(\d+)/) || [])[1] })).filter(r => r.id !== 'ebay:undefined' && r.id !== 'ebay:123456');
+    return [...items.values()];
 }
 
 async function mercari(ctx) {
@@ -140,7 +165,8 @@ export function merge(previous, results, now) {
         sources[source] = { updated: now, count: 0 };
         for (const l of r.items) {
             if (!l.title || !isJibo(l.title) || listings.some(x => x.id === l.id)) continue;
-            listings.push({ ...l, source, price: price(l.priceText), firstSeen: (old.get(l.id) || {}).firstSeen || now });
+            const entry = { ...l, source, price: price(l.priceText), firstSeen: (old.get(l.id) || {}).firstSeen || now };
+            listings.push({ ...entry, hotness: hotness(entry) });
             sources[source].count++;
         }
     }

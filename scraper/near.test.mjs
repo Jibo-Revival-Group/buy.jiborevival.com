@@ -9,7 +9,7 @@ const listings = { updated: new Date().toISOString(), sources: {}, listings: [
     { id: 'facebook:1', source: 'facebook', title: 'Jibo Social Robot', location: 'Morristown, NJ', firstSeen: '2026-11-01T00:00:00Z' },
     { id: 'facebook:2', source: 'facebook', title: 'Jibo robot', location: 'Boston, MA', firstSeen: '2026-11-01T00:00:00Z' },
     { id: 'facebook:3', source: 'facebook', title: 'Sealed Jibo', location: 'Ships to you', firstSeen: '2026-11-01T00:00:00Z' },
-    { id: 'ebay:1', source: 'ebay', title: 'Jibo Social Robot', location: 'United States', firstSeen: '2026-11-01T00:00:00Z' },
+    { id: 'ebay:1', source: 'ebay', title: 'Jibo Social Robot', location: 'United States', firstSeen: '2026-11-01T00:00:00Z', hotness: 7 },
     { id: 'craigslist:1', source: 'craigslist', title: 'Brand new jibo', location: 'Morris Plains', firstSeen: '2026-11-01T00:00:00Z' }] };
 
 async function open(b, geo) {
@@ -35,6 +35,10 @@ try {
     let shown = await titles(ma);
     assert.strictEqual(shown.length, 4, shown); assert(!shown.some(t => /Morristown/.test(t)), 'NJ pickup hidden');
     assert(shown.some(t => /Ships to you/.test(t)) && shown.some(t => /Morris Plains/.test(t)), 'shipping FB and Craigslist kept');
+    assert.strictEqual(await ma.textContent('.heat.hot'), '🔥 Hot +7', 'hot badge above 5');
+    await ma.selectOption('#sort', 'hot');
+    assert.strictEqual(await ma.textContent('.card h3'), 'Jibo Social Robot', 'hottest first');
+    await ma.selectOption('#sort', 'new');
     await ma.click('#near');
     assert.strictEqual((await titles(ma)).length, 5, 'off shows everything');
 
@@ -42,5 +46,5 @@ try {
         const p = await open(b, geo);
         assert(await p.isHidden('#near'), 'no state: no button'); assert.strictEqual((await titles(p)).length, 5);
     }
-    console.log('PASS near me');
+    console.log('PASS near me + hotness badge');
 } finally { await b.close(); }

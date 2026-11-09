@@ -75,6 +75,10 @@ input:focus-visible, select:focus-visible, .chip:focus-visible { outline: 3px so
 .pic { position: relative; aspect-ratio: 4 / 3; background: var(--bg-2) url(./assets/jrg.svg) center / 40px no-repeat; }
 .pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .new { position: absolute; top: 10px; left: 10px; padding: 3px 9px; border-radius: 999px; background: #29d780; color: #08240f; font-size: 11px; font-weight: 700; }
+.heat { position: absolute; top: 10px; right: 10px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,.92); color: #17202b; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.heat.hot { background: linear-gradient(135deg, #ff7a3d, #ff3d5a); color: #fff; }
+.heat.warm { color: #c2410c; }
+.heat.cold { color: #2f64c7; }
 .card-body { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px 14px; flex: 1; }
 .source { align-self: flex-start; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-deep); }
 .card h3 { margin: 0; font-size: 14px; font-weight: 500; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
