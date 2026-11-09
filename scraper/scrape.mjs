@@ -23,7 +23,13 @@ export function isJibo(title) {
 // Deal hotness from -10 to 10: price against $600 (+6 at $100 or less, -6 at $1,250 or more, linear in between),
 // +2 if sealed (the title says sealed, factory, unopened or new; "like new" is used), +2 from a trusted seller. Hot above 5.
 export const TRUSTED = { ebay: ['mor_749116', 'wesyojoe'] };
+// Listings that aren't a robot (parts, merch) get no score; Zane names them explicitly.
+export const NOT_ROBOT = new Set([
+    'ebay:366777263820', // Jibo Robot promo merchandise backpack
+    'ebay:366700058244', // Jibo power blocks
+]);
 export function hotness(l) {
+    if (NOT_ROBOT.has(l.id)) return null;
     const p = l.price;
     let score = p == null ? 0 : p <= 600 ? 6 * Math.min(1, (600 - p) / 500) : -6 * Math.min(1, (p - 600) / 650);
     const title = l.title.replace(/\b(un|not |no longer )sealed\b|\blike[- ]new\b/gi, '');

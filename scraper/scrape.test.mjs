@@ -49,5 +49,7 @@ for (const title of ['Jibo robot like new', 'Jibo robot, like-new condition', 'J
 assert.strictEqual(h(400, { seller: 'wesyojoe', title: 'New Factory Sealed Original Jibo Social Robot Box Unopened' }), 6, 'trusted + sealed');
 assert.strictEqual(h(100, { seller: 'MOR_749116', title: 'Sealed Jibo robot' }), 10, 'max 10');
 assert.strictEqual(hotness({ source: 'facebook', title: 'Jibo', price: 600, seller: 'wesyojoe' }), 0, 'trusted only on its marketplace');
+assert.strictEqual(hotness({ id: 'ebay:366777263820', source: 'ebay', seller: 'mor_749116', title: 'A Jibo Robot Promo Mechandise Backpack', price: 60 }), null, 'not a robot: no score');
+assert.strictEqual(hotness({ id: 'ebay:366700058244', source: 'ebay', title: 'Real Jibo Power Blocks', price: 60 }), null);
 assert.strictEqual(out.listings.find(l => l.id === 'ebay:3').hotness, 8, 'merge stores hotness ($99 = 6, "new" = +2)');
 console.log('PASS scrape');
