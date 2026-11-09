@@ -44,8 +44,10 @@ const h = (p, extra) => hotness({ source: 'ebay', title: 'Jibo Social Robot', pr
 assert.deepStrictEqual([600, 100, 50, 0, 1250, 2000, 350, 925, null].map(p => h(p)), [0, 6, 6, 6, -6, -6, 3, -3, 0]);
 assert.strictEqual(h(400, { title: 'New Factory Sealed Original Jibo Social Robot Box Unopened' }), 4, '2.4 + 2 sealed');
 assert.strictEqual(h(400, { title: 'Jibo robot, unsealed' }), 2, 'unsealed is not sealed');
+for (const title of ['Factory Jibo robot', 'Jibo robot unopened', 'New jibo robot', 'Brand new jibo']) assert.strictEqual(h(400, { title }), 4, title);
+for (const title of ['Jibo robot like new', 'Jibo robot, like-new condition', 'Jibo robot, not sealed']) assert.strictEqual(h(400, { title }), 2, title);
 assert.strictEqual(h(400, { seller: 'wesyojoe', title: 'New Factory Sealed Original Jibo Social Robot Box Unopened' }), 6, 'trusted + sealed');
 assert.strictEqual(h(100, { seller: 'MOR_749116', title: 'Sealed Jibo robot' }), 10, 'max 10');
 assert.strictEqual(hotness({ source: 'facebook', title: 'Jibo', price: 600, seller: 'wesyojoe' }), 0, 'trusted only on its marketplace');
-assert.strictEqual(out.listings.find(l => l.id === 'ebay:3').hotness, 6, 'merge stores hotness ($99)');
+assert.strictEqual(out.listings.find(l => l.id === 'ebay:3').hotness, 8, 'merge stores hotness ($99 = 6, "new" = +2)');
 console.log('PASS scrape');

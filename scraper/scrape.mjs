@@ -21,12 +21,13 @@ export function isJibo(title) {
         (JIBO_WORD.test(title) || /^\s*(brand\s+)?(new\s+|used\s+)?jibo('?s)?\s*$/i.test(title));
 }
 // Deal hotness from -10 to 10: price against $600 (+6 at $100 or less, -6 at $1,250 or more, linear in between),
-// +2 if sealed, +2 from a trusted seller. Hot above 5.
+// +2 if sealed (the title says sealed, factory, unopened or new; "like new" is used), +2 from a trusted seller. Hot above 5.
 export const TRUSTED = { ebay: ['mor_749116', 'wesyojoe'] };
 export function hotness(l) {
     const p = l.price;
     let score = p == null ? 0 : p <= 600 ? 6 * Math.min(1, (600 - p) / 500) : -6 * Math.min(1, (p - 600) / 650);
-    if (/\bsealed\b/i.test(l.title) && !/\b(un|not |no longer )sealed\b/i.test(l.title)) score += 2;
+    const title = l.title.replace(/\b(un|not |no longer )sealed\b|\blike[- ]new\b/gi, '');
+    if (/\b(sealed|factory|unopened|new)\b/i.test(title)) score += 2;
     if (l.seller && (TRUSTED[l.source] || []).includes(l.seller.toLowerCase())) score += 2;
     return Math.max(-10, Math.min(10, Math.round(score)));
 }
