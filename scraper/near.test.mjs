@@ -10,7 +10,7 @@ const listings = { updated: new Date().toISOString(), sources: {}, listings: [
     { id: 'facebook:2', source: 'facebook', title: 'Jibo robot', location: 'Boston, MA', firstSeen: '2026-11-01T00:00:00Z' },
     { id: 'facebook:3', source: 'facebook', title: 'Sealed Jibo', location: 'Ships to you', firstSeen: '2026-11-01T00:00:00Z' },
     { id: 'ebay:1', source: 'ebay', title: 'Jibo Social Robot', location: 'United States', firstSeen: '2026-11-01T00:00:00Z', hotness: 7 },
-    { id: 'craigslist:1', source: 'craigslist', title: 'Brand new jibo', location: 'Morris Plains', firstSeen: '2026-11-01T00:00:00Z' }] };
+    { id: 'craigslist:1', source: 'craigslist', title: 'Brand new jibo', location: 'Morris Plains', firstSeen: '2026-11-01T00:00:00Z', hotness: -3 }] };
 
 async function open(b, geo) {
     const p = await b.newPage();
@@ -38,6 +38,7 @@ try {
     assert.strictEqual(await ma.textContent('.heat.hot'), '🔥 Hot +7', 'hot badge above 5');
     await ma.selectOption('#sort', 'hot');
     assert.strictEqual(await ma.textContent('.card h3'), 'Jibo Social Robot', 'hottest first');
+    assert.strictEqual(await ma.locator('.card h3').nth(1).textContent(), 'Brand new jibo', 'a negative score still ranks above unscored listings');
     await ma.selectOption('#sort', 'new');
     await ma.click('#near');
     assert.strictEqual((await titles(ma)).length, 5, 'off shows everything');

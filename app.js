@@ -51,7 +51,7 @@
   function render() {
     var q = $('q').value.trim().toLowerCase(), sort = $('sort').value;
     var list = data.listings.filter(function (l) { return !off[l.source] && !farAway(l) && (!q || (l.title + ' ' + (l.location || '')).toLowerCase().indexOf(q) !== -1); });
-    if (sort === 'hot') list = list.slice().sort(function (a, b) { return (b.hotness || 0) - (a.hotness || 0); });
+    if (sort === 'hot') list = list.slice().sort(function (a, b) { return (b.hotness == null ? -99 : b.hotness) - (a.hotness == null ? -99 : a.hotness); }); // unscored last
     else if (sort !== 'new') list = list.slice().sort(function (a, b) {
       if (a.price == null) return 1; if (b.price == null) return -1; return sort === 'low' ? a.price - b.price : b.price - a.price;
     });
