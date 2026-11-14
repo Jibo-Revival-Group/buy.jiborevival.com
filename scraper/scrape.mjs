@@ -13,8 +13,8 @@ const FB_CITIES = ['boston', 'nyc', 'atlanta', 'miami', 'chicago', 'dallas', 'de
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // A real Jibo or Jibo part. Plenty of other things are called Jibo (Cartoni camera jibs, Funko "Jibo Jones", K9F...-JIBO flash
-// chips, books, CDs, the Jibo Kannon statue, Tekno "Jibo Kie" toys), so a Jibo word is required unless the title is just "jibo".
-const NOT_JIBO = /cartoni|\bjib\b|funko|jones|k9f|\bbga\b|\bchip\b|novel|hardback|paperback|\bcd\b|jacket|kan-?non|statue|acrylic|keychain|ghibli|postcard|dialogue|microphone|enping|baje|hikari|lychee|mschf|advertising|personali[sz]ed|tekno|dinkie|kie mom|wind[- ]?up|photocard|polaroid|\bpob\b|jiu sua/i;
+// chips, books, CDs, the Jibo Kannon statue, photos of the G-JIBO plane, Tekno "Jibo Kie" toys), so a Jibo word is required unless the title is just "jibo".
+const NOT_JIBO = /cartoni|\bjib\b|funko|jones|k9f|\bbga\b|\bchip\b|novel|hardback|paperback|\bcd\b|jacket|kan-?non|statue|acrylic|keychain|ghibli|postcard|dialogue|microphone|enping|baje|hikari|lychee|mschf|advertising|personali[sz]ed|tekno|dinkie|kie mom|wind[- ]?up|photocard|polaroid|g-jibo|\bpob\b|jiu sua/i;
 const JIBO_WORD = /robot|social|charg|power|adapter|cord|cable|\bbase\b|\bparts?\b|motherboard|board|shell|battery|\b201[4-9]\b/i;
 export function isJibo(title) {
     return /\bjibo\b/i.test(title) && !NOT_JIBO.test(title) &&
@@ -26,6 +26,7 @@ export const TRUSTED = { ebay: ['mor_749116', 'wesyojoe'] };
 // Listings that aren't a robot (parts, merch) get no score; Zane names them explicitly.
 export const NOT_ROBOT = new Set([
     'ebay:366777263820', // Jibo Robot promo merchandise backpack
+    'ebay:366795731787', // the same backpack, relisted
     'ebay:366700058244', // Jibo power blocks
 ]);
 export function hotness(l) {

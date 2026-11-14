@@ -58,4 +58,6 @@ assert.deepStrictEqual(ebayItems({ itemSummaries: [{ itemId: 'v1|318240274373|0'
     [{ id: 'ebay:318240274373', url: 'https://www.ebay.com/itm/318240274373', title: 'Jibo Social Robot', priceText: '$282.42',
         image: 'https://i.ebayimg.com/x.jpg', location: 'Canada', seller: 'wesyojoe' }]);
 assert.deepStrictEqual(ebayItems({ total: 0 }), [], 'no results');
+assert(!isJibo('Photo 6x4 G-JIBO, George Best Belfast City Airport (January 2015) Ballyha c2015'), 'plane photo');
+assert.strictEqual(hotness({ id: 'ebay:366795731787', source: 'ebay', title: 'A Jibo Robot Promo Mechandise Backpack', price: 90 }), null, 'relisted backpack');
 console.log('PASS scrape');
