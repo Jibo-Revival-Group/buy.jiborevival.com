@@ -1,6 +1,6 @@
 // node scraper/scrape.test.mjs — filter, price parsing and merge rules.
 import assert from 'node:assert';
-import { isJibo, price, merge, craigslistItems, poshmarkItems, hotness } from './scrape.mjs';
+import { isJibo, price, merge, craigslistItems, poshmarkItems, hotness, ebayItems } from './scrape.mjs';
 
 // Real titles from the first scrape.
 for (const t of ['Jibo Social Robot', 'jibo robot can be powered on', 'New Factory Sealed Original Jibo Social Robot Box Unopened AI Collectible', 'Brand new jibo',
@@ -52,4 +52,10 @@ assert.strictEqual(hotness({ source: 'facebook', title: 'Jibo', price: 600, sell
 assert.strictEqual(hotness({ id: 'ebay:366777263820', source: 'ebay', seller: 'mor_749116', title: 'A Jibo Robot Promo Mechandise Backpack', price: 60 }), null, 'not a robot: no score');
 assert.strictEqual(hotness({ id: 'ebay:366700058244', source: 'ebay', title: 'Real Jibo Power Blocks', price: 60 }), null);
 assert.strictEqual(out.listings.find(l => l.id === 'ebay:3').hotness, 8, 'merge stores hotness ($99 = 6, "new" = +2)');
+// Browse API item_summary/search response (trimmed).
+assert.deepStrictEqual(ebayItems({ itemSummaries: [{ itemId: 'v1|318240274373|0', legacyItemId: '318240274373', title: 'Jibo Social Robot',
+    price: { value: '282.42', currency: 'USD' }, image: { imageUrl: 'https://i.ebayimg.com/x.jpg' }, itemLocation: { country: 'CA' }, seller: { username: 'wesyojoe' } }] }),
+    [{ id: 'ebay:318240274373', url: 'https://www.ebay.com/itm/318240274373', title: 'Jibo Social Robot', priceText: '$282.42',
+        image: 'https://i.ebayimg.com/x.jpg', location: 'Canada', seller: 'wesyojoe' }]);
+assert.deepStrictEqual(ebayItems({ total: 0 }), [], 'no results');
 console.log('PASS scrape');

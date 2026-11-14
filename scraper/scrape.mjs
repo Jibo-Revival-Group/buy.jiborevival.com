@@ -1,6 +1,6 @@
 // Scrapes Jibo listings from eBay, Mercari, Facebook Marketplace, Craigslist and Poshmark into ../listings.json
 // (local state, not committed); publish.sh uploads it to BEefy, which serves it to the site at /jibo-listings.
-// eBay and Mercari block headless browsers, so run it headed under Xvfb:  xvfb-run -a node scraper/scrape.mjs
+// Mercari blocks headless browsers, so run it headed under Xvfb:  xvfb-run -a node scraper/scrape.mjs
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -43,34 +43,28 @@ export function price(text) {
     return m ? Number(m[1]) : null;
 }
 
-// Search cards don't show the seller, so trusted sellers get their own seller-filtered search (_ssn) to tag their items.
-async function ebay(ctx) {
-    const p = await ctx.newPage();
-    await p.goto('https://www.ebay.com/', { waitUntil: 'domcontentloaded', timeout: 60000 }); await sleep(3000);
-    const search = async query => {
-        await p.goto('https://www.ebay.com/sch/i.html?_nkw=jibo&_ipg=240' + query, { waitUntil: 'domcontentloaded', timeout: 60000 }); await sleep(5000);
-        const rows = await p.evaluate(() => {
-            const out = [];
-            for (const li of document.querySelectorAll('.srp-results > li, li.s-card, li.s-item')) {
-                if (/REWRITE_START/.test(li.className)) break; // "results matching fewer words" from anyone follow
-                const a = li.querySelector('a[href*="/itm/"]'), img = li.querySelector('img');
-                if (!a) continue;
-                const title = (li.querySelector('.s-card__title, .s-item__title') || {}).innerText || '';
-                const priceText = (li.querySelector('.s-card__price, .s-item__price') || {}).innerText || '';
-                const where = [...li.querySelectorAll('.s-card__attribute-row, .s-item__location')].map(e => e.innerText).find(t => /^(located in|from) /i.test(t)) || '';
-                out.push({ url: a.href.split('?')[0], title, priceText, image: img && (img.getAttribute('data-defer-load') || img.src), location: where.replace(/^(located in|from) /i, '') });
-            }
-            return out;
-        });
-        return rows.map(r => ({ ...r, title: r.title.replace(/\s*Opens in a new window or tab\s*$/i, '').replace(/^New Listing\s*/i, '').trim(),
-            id: 'ebay:' + (r.url.match(/\/itm\/(\d+)/) || [])[1] })).filter(r => r.id !== 'ebay:undefined' && r.id !== 'ebay:123456');
-    };
-    const items = new Map((await search('')).map(r => [r.id, r]));
-    for (const seller of TRUSTED.ebay) {
-        for (const r of await search('&_ssn=' + seller)) items.set(r.id, { ...(items.get(r.id) || r), seller });
-    }
-    await p.close();
-    return [...items.values()];
+// eBay's Browse API (eBay hides search results from the scraper's browser). EBAY_AUTH is "<App ID>:<Cert ID>" of a
+// developer.ebay.com production keyset; publish.sh reads it from /root/.config/buy-jibo/ebay.
+export function ebayItems(json) {
+    const country = new Intl.DisplayNames(['en'], { type: 'region' });
+    return (json.itemSummaries || []).map(i => ({
+        id: 'ebay:' + i.legacyItemId, url: 'https://www.ebay.com/itm/' + i.legacyItemId, title: i.title,
+        priceText: i.price ? '$' + Number(i.price.value).toFixed(2) : '', image: i.image && i.image.imageUrl,
+        location: i.itemLocation && i.itemLocation.country ? country.of(i.itemLocation.country) : '',
+        seller: i.seller && i.seller.username }));
+}
+
+async function ebay() {
+    if (!process.env.EBAY_AUTH) throw new Error('no EBAY_AUTH');
+    const t = await fetch('https://api.ebay.com/identity/v1/oauth2/token', { method: 'POST',
+        headers: { Authorization: 'Basic ' + Buffer.from(process.env.EBAY_AUTH).toString('base64'), 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'grant_type=client_credentials&scope=' + encodeURIComponent('https://api.ebay.com/oauth/api_scope') });
+    if (!t.ok) throw new Error('token HTTP ' + t.status);
+    // shortcut: one page of 200 results, page with `offset` if Jibo searches ever pass 200
+    const r = await fetch('https://api.ebay.com/buy/browse/v1/item_summary/search?q=jibo&limit=200',
+        { headers: { Authorization: 'Bearer ' + (await t.json()).access_token, 'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US' } });
+    if (!r.ok) throw new Error('search HTTP ' + r.status);
+    return ebayItems(await r.json());
 }
 
 async function mercari(ctx) {
@@ -186,7 +180,7 @@ async function main() {
     const b = await chromium.launch({ headless: false, channel: 'chromium', args: ['--disable-blink-features=AutomationControlled'] });
     const ctx = await b.newContext({ locale: 'en-US', viewport: { width: 1280, height: 900 } });
     const results = {};
-    for (const [name, run] of [['ebay', () => ebay(ctx)], ['mercari', () => mercari(ctx)], ['facebook', () => facebook(ctx)], ['craigslist', craigslist], ['poshmark', poshmark]]) {
+    for (const [name, run] of [['ebay', ebay], ['mercari', () => mercari(ctx)], ['facebook', () => facebook(ctx)], ['craigslist', craigslist], ['poshmark', poshmark]]) {
         try { const items = await run(); results[name] = { items }; console.log(name, items.length, 'found'); }
         catch (e) { results[name] = { error: e.message.slice(0, 200) }; console.error(name, 'FAILED', e.message); }
     }
